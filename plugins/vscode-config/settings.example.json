@@ -1,0 +1,11 @@
+{
+  // Exemplo: exportar OTel do Copilot Chat para um coletor OTLP LOCAL
+  // (Aspire Dashboard / OpenTelemetry Collector / Jaeger) ouvindo em :4318.
+  // Cole em: VSCode > Settings (JSON).
+  // Porta 4318 = OTLP HTTP/protobuf. O exporter anexa "/v1/traces" sozinho.
+  "github.copilot.chat.otel.enabled": true,
+  "github.copilot.chat.otel.exporterType": "otlp-http",
+  "github.copilot.chat.otel.otlpEndpoint": "http://localhost:4318",
+  // Privacidade: por padrão NÃO captura conteúdo de prompts/respostas. Mantenha false.
+  "github.copilot.chat.otel.captureContent": false
+}

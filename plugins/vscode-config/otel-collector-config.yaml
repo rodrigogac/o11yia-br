@@ -1,0 +1,42 @@
+# OpenTelemetry Collector — config de VALIDACAO local.
+# Recebe OTLP (do Copilot Chat) e imprime no log para confirmar a chegada dos traces.
+# Em producao, troque/adicione um exporter que encaminhe para o backend O11yIA.
+#
+# Subir:
+#   docker run --rm -it -p 4317:4317 -p 4318:4318 \
+#     -v "${PWD}/otel-collector-config.yaml:/etc/otelcol/config.yaml" \
+#     otel/opentelemetry-collector:latest
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+
+exporters:
+  # Imprime tudo no log do container — confirme aqui os atributos gen_ai.usage.*
+  debug:
+    verbosity: detailed
+  # Em producao: encaminhar para o backend O11yIA. Descomente e ajuste se o
+  # backend aceitar OTLP. Caso contrario, use um processor/connector para
+  # transformar para o formato JSON /v1/metrics do O11yIA.
+  # otlphttp/o11yia:
+  #   endpoint: http://SERVIDOR:8080
+  #   tls:
+  #     insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
