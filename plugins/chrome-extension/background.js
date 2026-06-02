@@ -9,6 +9,9 @@
 const DEFAULT_CONFIG = {
   serverUrl: 'http://localhost:8080',
   userId: 'user@empresa.gov.br',
+  apiKey: '',
+  team: '',
+  project: '',
   enabled: true
 };
 
@@ -57,7 +60,7 @@ chrome.webRequest.onCompleted.addListener(
     if (!config.enabled) return;
     
     // Extrair informações do request
-    const metric = extractMetricFromRequest(details, config.userId);
+    const metric = extractMetricFromRequest(details, config);
     if (metric) {
       metricsQueue.push(metric);
       updateBadge();
@@ -67,9 +70,9 @@ chrome.webRequest.onCompleted.addListener(
 );
 
 // Extrai métrica do request
-function extractMetricFromRequest(details, userId) {
+function extractMetricFromRequest(details, config) {
   const url = new URL(details.url);
-  
+
   // Identificar tipo de request
   let context = 'completion';
   if (url.pathname.includes('chat')) {
@@ -77,13 +80,13 @@ function extractMetricFromRequest(details, userId) {
   } else if (url.pathname.includes('inline')) {
     context = 'inline';
   }
-  
+
   // Estimar tokens baseado no tamanho da response
   // Em produção, seria melhor parsear o response body
   const estimatedTokens = estimateTokensFromResponse(details);
-  
-  return {
-    user_id: userId,
+
+  const metric = {
+    user_id: config.userId,
     source: 'browser',
     model: 'gpt-4o', // Copilot usa GPT-4o por padrão
     input_tokens: estimatedTokens.input,
@@ -92,6 +95,12 @@ function extractMetricFromRequest(details, userId) {
     session_id: `chrome-${Date.now()}`,
     context: context
   };
+
+  // Campos opcionais do config
+  if (config.team) metric.team = config.team;
+  if (config.project) metric.project = config.project;
+
+  return metric;
 }
 
 // Estima tokens (heurística)
@@ -113,20 +122,34 @@ async function flushMetricsQueue() {
   if (metricsQueue.length === 0) return;
   
   const config = await chrome.storage.sync.get(DEFAULT_CONFIG);
+
+  // Sem API key não há como autenticar: mantém a fila para retry
+  if (!config.apiKey) {
+    console.error('[O11yIA BR] API Key não configurada. Métricas mantidas na fila. Configure em Opções.');
+    return;
+  }
+
   const metricsToSend = [...metricsQueue];
   metricsQueue = [];
-  
+
   try {
     const response = await fetch(`${config.serverUrl}/v1/metrics/batch`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': config.apiKey
+      },
       body: JSON.stringify(metricsToSend)
     });
-    
-    if (!response.ok) {
+
+    if (response.status === 401) {
+      // Autenticação falhou: mantém a fila para retry após corrigir a chave
+      metricsQueue = [...metricsToSend, ...metricsQueue];
+      console.error('[O11yIA BR] 401 Unauthorized: X-API-Key inválida ou ausente. Verifique a API Key nas Opções. Fila mantida para retry.');
+    } else if (!response.ok) {
       // Se falhar, recoloca na fila
       metricsQueue = [...metricsToSend, ...metricsQueue];
-      console.error('Failed to send metrics:', response.statusText);
+      console.error('Failed to send metrics:', response.status, response.statusText);
     } else {
       const result = await response.json();
       console.log(`Sent ${result.count} metrics, ${result.total_credits} credits`);
@@ -136,7 +159,7 @@ async function flushMetricsQueue() {
     metricsQueue = [...metricsToSend, ...metricsQueue];
     console.error('Error sending metrics:', error);
   }
-  
+
   updateBadge();
 }
 
@@ -167,9 +190,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
       
     case 'ADD_METRIC':
-      metricsQueue.push(message.metric);
-      updateBadge();
-      sendResponse({ success: true });
+      // Enriquece a métrica do content script com dados do config (user_id, team, project)
+      chrome.storage.sync.get(DEFAULT_CONFIG, (config) => {
+        if (!config.enabled) {
+          sendResponse({ success: false, reason: 'disabled' });
+          return;
+        }
+        const metric = {
+          ...message.metric,
+          user_id: message.metric.user_id || config.userId,
+          source: 'browser'
+        };
+        if (config.team && !metric.team) metric.team = config.team;
+        if (config.project && !metric.project) metric.project = config.project;
+        metricsQueue.push(metric);
+        updateBadge();
+        sendResponse({ success: true });
+      });
       return true;
   }
 });
@@ -177,15 +214,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Obtém estatísticas do servidor
 async function getStats() {
   const config = await chrome.storage.sync.get(DEFAULT_CONFIG);
-  
+
+  if (!config.apiKey) {
+    console.error('[O11yIA BR] API Key não configurada. Não é possível consultar estatísticas.');
+    return null;
+  }
+
   try {
-    const response = await fetch(`${config.serverUrl}/v1/users/${encodeURIComponent(config.userId)}`);
+    const response = await fetch(`${config.serverUrl}/v1/users/${encodeURIComponent(config.userId)}`, {
+      headers: { 'X-API-Key': config.apiKey }
+    });
+    if (response.status === 401) {
+      console.error('[O11yIA BR] 401 Unauthorized ao consultar estatísticas: verifique a API Key nas Opções.');
+      return null;
+    }
     if (response.ok) {
       return await response.json();
     }
   } catch (error) {
     console.error('Error fetching stats:', error);
   }
-  
+
   return null;
 }
