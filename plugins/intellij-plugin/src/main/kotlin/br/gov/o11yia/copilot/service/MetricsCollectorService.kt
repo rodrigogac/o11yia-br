@@ -46,6 +46,9 @@ class MetricsCollectorService {
         val model: String,
         @SerializedName("input_tokens") val inputTokens: Int,
         @SerializedName("output_tokens") val outputTokens: Int,
+        @SerializedName("team") val team: String? = null,
+        @SerializedName("project") val project: String? = null,
+        @SerializedName("reasoning_tokens") val reasoningTokens: Int? = null,
         val timestamp: String = Instant.now().toString(),
         @SerializedName("session_id") val sessionId: String? = null,
         val context: String? = null
@@ -115,18 +118,24 @@ class MetricsCollectorService {
             
             val request = Request.Builder()
                 .url("${settings.serverUrl}/v1/metrics/batch")
+                .addHeader("X-API-Key", settings.apiKey)
                 .post(body)
                 .build()
 
             val response = httpClient.newCall(request).execute()
-            
+
             if (response.isSuccessful) {
                 logger.info("Sent ${metricsToSend.size} metrics successfully")
                 true
             } else {
                 // Requeue on failure
                 metricsToSend.forEach { metricsQueue.offer(it) }
-                logger.warn("Failed to send metrics: ${response.code}")
+                if (response.code == 401) {
+                    logger.error("Authentication failed (401) sending metrics: invalid or missing X-API-Key. " +
+                            "Configure a API Key em Tools > O11yIA Copilot Metrics. Métricas mantidas na fila.")
+                } else {
+                    logger.warn("Failed to send metrics: ${response.code}")
+                }
                 false
             }
         } catch (e: Exception) {
@@ -199,6 +208,8 @@ class MetricsCollectorService {
                         model = lastModel,
                         inputTokens = inputTokens,
                         outputTokens = outputTokens,
+                        team = settings.team.ifBlank { null },
+                        project = settings.project.ifBlank { null },
                         context = "completion"
                     ))
                 }
@@ -210,16 +221,23 @@ class MetricsCollectorService {
         return try {
             val request = Request.Builder()
                 .url("${settings.serverUrl}/v1/users/${settings.userId}")
+                .addHeader("X-API-Key", settings.apiKey)
                 .get()
                 .build()
 
             val response = httpClient.newCall(request).execute()
-            
+
             if (response.isSuccessful) {
                 response.body?.string()?.let {
                     gson.fromJson(it, UserStats::class.java)
                 }
             } else {
+                if (response.code == 401) {
+                    logger.error("Authentication failed (401) fetching user stats: invalid or missing X-API-Key. " +
+                            "Configure a API Key em Tools > O11yIA Copilot Metrics.")
+                } else {
+                    logger.warn("Failed to fetch user stats: ${response.code}")
+                }
                 null
             }
         } catch (e: Exception) {
