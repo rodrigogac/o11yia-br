@@ -1,0 +1,21 @@
+# Worktrees de agentes / artefatos locais do Claude Code
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Dados locais
+*.db
+*.db-wal
+*.db-shm
+
+# Node / build de plugins
+node_modules/
+*.vsix
+
+# Sistema
+.DS_Store
+Thumbs.db

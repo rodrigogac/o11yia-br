@@ -212,7 +212,10 @@ def fetch_alerts(api_url: str, api_key: str):
 
 @st.cache_data(ttl=30, show_spinner=False)
 def fetch_teams(api_url: str, api_key: str):
-    return api_request("GET", "/v1/teams")
+    resp = api_request("GET", "/v1/teams")
+    if isinstance(resp, dict):
+        return resp.get("teams", [])
+    return resp or []
 
 
 @st.cache_data(ttl=30, show_spinner=False)
@@ -223,7 +226,10 @@ def fetch_user_detail(api_url: str, api_key: str, user_id: str, days: int):
 # --- Wrappers admin (sem cache - sempre fresco) ----------------------------
 
 def admin_list_teams():
-    return api_request("GET", "/v1/admin/teams", admin=True)
+    resp = api_request("GET", "/v1/admin/teams", admin=True)
+    if isinstance(resp, dict):
+        return resp.get("teams", [])
+    return resp or []
 
 
 def admin_create_team(payload: dict):
@@ -239,7 +245,10 @@ def admin_delete_team(name: str):
 
 
 def admin_list_users():
-    return api_request("GET", "/v1/admin/users", admin=True)
+    resp = api_request("GET", "/v1/admin/users", admin=True)
+    if isinstance(resp, dict):
+        return resp.get("users", [])
+    return resp or []
 
 
 def admin_update_user(user_id: str, payload: dict):
