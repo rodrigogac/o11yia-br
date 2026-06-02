@@ -1,0 +1,78 @@
+<idea-plugin>
+    <id>br.gov.o11yia.copilot-metrics</id>
+    <name>O11yIA BR - Copilot Metrics</name>
+    <version>1.0.0</version>
+    <vendor email="suporte@o11yia.gov.br" url="https://o11yia.gov.br">O11yIA BR</vendor>
+
+    <description><![CDATA[
+    <h2>Monitoramento de Créditos do GitHub Copilot</h2>
+    <p>Plugin para monitorar o uso de créditos do GitHub Copilot em tempo real.</p>
+    
+    <h3>Funcionalidades:</h3>
+    <ul>
+        <li>Monitoramento automático de tokens consumidos</li>
+        <li>Envio de métricas para servidor central</li>
+        <li>Dashboard de consumo na barra de status</li>
+        <li>Alertas de limite de créditos</li>
+    </ul>
+    
+    <p>Desenvolvido para times de desenvolvimento que usam GitHub Copilot com modelo de créditos compartilhados.</p>
+    ]]></description>
+
+    <change-notes><![CDATA[
+    <h3>1.0.0</h3>
+    <ul>
+        <li>Lançamento inicial</li>
+        <li>Monitoramento de logs do Copilot</li>
+        <li>Integração com servidor O11yIA BR</li>
+    </ul>
+    ]]></change-notes>
+
+    <idea-version since-build="241" until-build="251.*"/>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Settings -->
+        <applicationConfigurable
+            parentId="tools"
+            instance="br.gov.o11yia.copilot.settings.CopilotMetricsConfigurable"
+            id="br.gov.o11yia.copilot.settings"
+            displayName="O11yIA Copilot Metrics"/>
+        
+        <applicationService
+            serviceImplementation="br.gov.o11yia.copilot.settings.CopilotMetricsSettings"/>
+        
+        <!-- Status bar widget -->
+        <statusBarWidgetFactory
+            id="CopilotMetricsWidget"
+            implementation="br.gov.o11yia.copilot.ui.CopilotMetricsWidgetFactory"/>
+        
+        <!-- Startup activity -->
+        <postStartupActivity
+            implementation="br.gov.o11yia.copilot.CopilotMetricsStartup"/>
+        
+        <!-- Notification group -->
+        <notificationGroup
+            id="O11yIA Copilot Metrics"
+            displayType="BALLOON"/>
+    </extensions>
+
+    <actions>
+        <action
+            id="CopilotMetrics.ShowDashboard"
+            class="br.gov.o11yia.copilot.actions.ShowDashboardAction"
+            text="Mostrar Dashboard de Créditos"
+            description="Abre o dashboard de consumo de créditos do Copilot">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        
+        <action
+            id="CopilotMetrics.SyncNow"
+            class="br.gov.o11yia.copilot.actions.SyncNowAction"
+            text="Sincronizar Métricas Agora"
+            description="Força sincronização imediata das métricas">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
