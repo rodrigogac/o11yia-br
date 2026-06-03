@@ -1,0 +1,14 @@
+{
+  // Exemplo: apontar o OTel do Copilot Chat para o backend O11yIA.
+  // ATENCAO: o exporter HTTP anexa "/v1/traces" automaticamente ao endpoint base.
+  //   - Configure a BASE "http://SERVIDOR:8080" (SEM "/v1/traces").
+  //   - Resultado efetivo: POST http://SERVIDOR:8080/v1/traces
+  // Isso so funciona se o backend O11yIA aceitar ingestao OTLP nesse caminho.
+  // O backend da PoC expoe /v1/metrics (JSON proprio), NAO OTLP — nesse caso
+  // coloque um OpenTelemetry Collector no meio (ver otel-collector-config.yaml)
+  // ou use a extensao propria em ../vscode-extension/.
+  "github.copilot.chat.otel.enabled": true,
+  "github.copilot.chat.otel.exporterType": "otlp-http",
+  "github.copilot.chat.otel.otlpEndpoint": "http://SERVIDOR:8080",
+  "github.copilot.chat.otel.captureContent": false
+}

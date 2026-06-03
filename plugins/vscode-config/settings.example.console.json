@@ -1,0 +1,10 @@
+{
+  // Exemplo: validacao RAPIDA sem container.
+  // Escreve os spans OTel em um arquivo JSON-lines para inspecao manual.
+  // Apos usar o Copilot Chat (modo Agente), abra o arquivo e procure por
+  // "gen_ai.usage.input_tokens" / "gen_ai.usage.output_tokens".
+  "github.copilot.chat.otel.enabled": true,
+  "github.copilot.chat.otel.exporterType": "file",
+  "github.copilot.chat.otel.outfile": "C:\\temp\\copilot-otel.jsonl",
+  "github.copilot.chat.otel.captureContent": false
+}

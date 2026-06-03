@@ -1,0 +1,10 @@
+# Gradle
+.gradle/
+build/
+
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# Keep the Gradle wrapper jar committed (do not ignore gradle/wrapper/)

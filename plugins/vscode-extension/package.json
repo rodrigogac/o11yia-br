@@ -1,0 +1,90 @@
+{
+  "name": "o11yia-vscode",
+  "displayName": "O11yIA BR — Copilot Token Tracker",
+  "description": "Captura uso de tokens do GitHub Copilot Chat no VSCode (via Chat Participant / Language Model API) e envia ao backend O11yIA BR.",
+  "version": "0.1.0",
+  "publisher": "o11yia-br",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other",
+    "AI",
+    "Chat"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "o11yia.tracker",
+        "name": "o11yia",
+        "fullName": "O11yIA Tracker",
+        "description": "Encaminha sua pergunta a um modelo do Copilot e contabiliza os tokens usados.",
+        "isSticky": true
+      }
+    ],
+    "commands": [
+      {
+        "command": "o11yia.syncNow",
+        "title": "O11yIA: Sync Now"
+      },
+      {
+        "command": "o11yia.sendTestMetric",
+        "title": "O11yIA: Send Test Metric"
+      },
+      {
+        "command": "o11yia.showStatus",
+        "title": "O11yIA: Show Status"
+      }
+    ],
+    "configuration": {
+      "title": "O11yIA BR",
+      "properties": {
+        "o11yia.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Habilita a captura e o envio de métricas de uso de tokens."
+        },
+        "o11yia.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:8080",
+          "description": "URL base do backend O11yIA (sem barra final)."
+        },
+        "o11yia.userId": {
+          "type": "string",
+          "default": "",
+          "description": "Identificador do usuário (e-mail). Ex.: fulano@empresa.gov.br"
+        },
+        "o11yia.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key enviada no header X-API-Key.",
+          "markdownDescription": "API key enviada no header `X-API-Key`. **Não** comite este valor em settings versionadas."
+        },
+        "o11yia.team": {
+          "type": "string",
+          "default": "",
+          "description": "Time/squad do usuário (opcional). Ex.: backend"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.js --production",
+    "watch": "node esbuild.js --watch",
+    "compile": "tsc -p ./ --noEmit",
+    "lint": "tsc -p ./ --noEmit",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.95.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.5.0"
+  }
+}

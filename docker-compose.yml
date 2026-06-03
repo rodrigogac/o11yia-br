@@ -13,6 +13,15 @@ services:
       - o11yia-data:/data
     environment:
       - DATABASE_PATH=/data/metrics.db
+      # Autenticação (CONTRATO):
+      #   O11YIA_API_KEYS  : chaves válidas p/ ingestão/query (X-API-Key), separadas por vírgula.
+      #   O11YIA_ADMIN_KEY : chave dos endpoints /v1/admin/* (X-Admin-Key).
+      #   O11YIA_AUTH_DISABLED=true desliga toda a auth (modo dev/PoC).
+      # Troque os valores abaixo por segredos reais em produção.
+      - O11YIA_API_KEYS=dev-key-1,dev-key-2
+      - O11YIA_ADMIN_KEY=dev-admin-key
+      # CORS: origens permitidas (separadas por vírgula). Default = dashboard local.
+      - O11YIA_CORS_ORIGINS=http://localhost:8501
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]

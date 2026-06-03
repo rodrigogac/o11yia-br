@@ -14,6 +14,9 @@ class CopilotMetricsSettings : PersistentStateComponent<CopilotMetricsSettings.S
     data class State(
         var serverUrl: String = "http://localhost:8080",
         var userId: String = "user@empresa.gov.br",
+        var apiKey: String = "",
+        var team: String = "",
+        var project: String = "",
         var enabled: Boolean = true,
         var syncIntervalSeconds: Int = 30,
         var showStatusBarWidget: Boolean = true
@@ -34,6 +37,18 @@ class CopilotMetricsSettings : PersistentStateComponent<CopilotMetricsSettings.S
     var userId: String
         get() = myState.userId
         set(value) { myState.userId = value }
+
+    var apiKey: String
+        get() = myState.apiKey
+        set(value) { myState.apiKey = value }
+
+    var team: String
+        get() = myState.team
+        set(value) { myState.team = value }
+
+    var project: String
+        get() = myState.project
+        set(value) { myState.project = value }
 
     var enabled: Boolean
         get() = myState.enabled
