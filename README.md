@@ -1,152 +1,328 @@
-# O11yIA BR - Copilot Metrics Tracker
+# O11yIA BR — Copilot Metrics Tracker
 
-Sistema de observabilidade para monitoramento de créditos do GitHub Copilot em times de desenvolvimento.
+[![Open Source](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Early Stage](https://img.shields.io/badge/status-early%20stage-orange.svg)](#current-status)
+[![AI Governance](https://img.shields.io/badge/focus-AI%20Governance-blue.svg)](#why-this-matters)
+[![Observability](https://img.shields.io/badge/category-Observability-brightgreen.svg)](#what-o11yia-br-does)
 
-## 📋 Componentes
+**English** | [Português](#português)
+
+O11yIA BR is an open-source observability and governance platform for AI-assisted development teams. It helps organizations **monitor token usage, credit consumption, model adoption, project/team costs, and usage anomalies** across tools such as GitHub Copilot, VSCode, Chrome and IntelliJ collectors, **without collecting source code or user prompts**.
+
+---
+
+## Why this matters
+
+AI-powered coding tools like GitHub Copilot are growing rapidly across development teams. Yet most organizations still lack visibility into:
+
+- **Cost and consumption**: How many tokens are being used? Which teams or projects consume the most?
+- **Budget governance**: What happens when credit pools are depleted? Are there anomalies or waste?
+- **Model adoption**: Which LLMs are actually being used in practice?
+- **Usage patterns**: Which developers, teams, and projects rely on AI assistance?
+- **Compliance and audits**: Can organizations prove what data was collected (and what wasn't)?
+
+O11yIA BR addresses these gaps by providing **aggregated, privacy-first metrics** designed specifically for AI-assisted development governance.
+
+---
+
+## What O11yIA BR does
+
+✅ **Tracks AI coding usage metrics** — tokens, models, sources, teams, and projects.  
+✅ **Aggregates by user, team, project, and model** — no individual prompts, no code snippets.  
+✅ **Identifies consumption trends** — spot unusual spikes, patterns, or budget risks.  
+✅ **Enables cost governance** — set budgets, track spend, generate reports.  
+✅ **Provides a dashboard** — real-time visibility via Streamlit analytics.  
+✅ **Plans multiple collectors** — VSCode (native OTel + fallback extension), Chrome, IntelliJ.  
+
+---
+
+## What it does NOT collect
+
+**This is a privacy-first project.** O11yIA BR is explicitly **designed NOT to collect**:
+
+❌ Source code  
+❌ Prompt content  
+❌ Generated code content  
+❌ Secrets or credentials  
+❌ Private files  
+❌ Full browser history  
+❌ Keystrokes  
+❌ Screenshots or screen recordings  
+❌ Personal messages  
+
+O11yIA BR collects **only metadata and aggregated metrics** intended for cost governance, observability, and responsible AI adoption.
+
+---
+
+## Architecture
 
 ```
-o11yia-br/
-├── server/           # API FastAPI (collector multi-fonte + OTLP + admin)
-├── dashboard/        # Painel de administração Streamlit (multi-página)
-├── plugins/
-│   ├── vscode-extension/   # Extensão VSCode própria (captura + envio)
-│   ├── vscode-config/      # Validação + config do OTel nativo do Copilot
-│   ├── chrome-extension/   # Extensão para browser
-│   └── intellij-plugin/    # Plugin IntelliJ IDEA
-└── deploy/           # Scripts de instalação
+┌─────────────────────────────────────────┐
+│  Collectors (VSCode, Chrome, IntelliJ)  │
+└─────────────┬───────────────────────────┘
+              │ HTTP / OpenTelemetry
+              ▼
+┌─────────────────────────────────────────┐
+│      FastAPI Backend                    │
+│  • Metrics ingestion endpoints          │
+│  • OTLP trace receiver                  │
+│  • Admin APIs (teams, budgets, config)  │
+└─────────────┬───────────────────────────┘
+              │ SQLite / Storage
+              ▼
+┌─────────────────────────────────────────┐
+│      Metrics Storage                    │
+│  • Aggregated usage events              │
+│  • Cost tracking                        │
+│  • Alerts and anomalies                 │
+└─────────────┬───────────────────────────┘
+              │ REST API
+              ▼
+┌─────────────────────────────────────────┐
+│   Streamlit Dashboard                   │
+│  • Analytics and visualizations         │
+│  • Reports and governance               │
+│  • Budget and cost views                │
+└─────────────────────────────────────────┘
 ```
 
-## 🚀 Deploy Rápido
+**Key components:**
 
-### 1. Servidor Central
+- **FastAPI backend** (`server/`) — RESTful metrics API, OTLP ingestion, admin endpoints.
+- **Streamlit dashboard** (`dashboard/`) — real-time analytics, filtering, reports.
+- **Collectors/extensions** (`plugins/`) — VSCode (OTel + fallback), Chrome, IntelliJ.
+- **Docker-based local deployment** (`docker-compose.yml`) — easy local development and testing.
+
+---
+
+## Current status
+
+**This project is currently early-stage and under active development.**
+
+- Core APIs, collectors, and dashboards are functional for local development and testing.
+- Architecture may change as the project evolves.
+- Not yet production-hardened; use for evaluation, prototyping, and contribution.
+
+See the [ROADMAP](#roadmap) for planned features and phases.
+
+---
+
+## Quick start
+
+### Prerequisites
+
+- Docker and Docker Compose (recommended)  
+- OR: Python 3.10+, Node.js 18+, Java 11+ (for manual setup)
+
+### Option 1: Docker Compose (recommended)
 
 ```bash
-cd ~/projetosdocker/o11yia-br
-docker compose up -d
+git clone https://github.com/rodrigogac/o11yia-br.git
+cd o11yia-br
+docker compose up --build
 ```
 
-Acesse:
 - **API**: http://localhost:8080
 - **Dashboard**: http://localhost:8501
+- **Health check**: `curl http://localhost:8080/health`
 
-### 2. Captura no VSCode
+### Option 2: Manual Python setup (backend only)
 
-Há dois caminhos (veja detalhes em `plugins/vscode-config/README.md`):
+```bash
+git clone https://github.com/rodrigogac/o11yia-br.git
+cd o11yia-br
 
-- **OTel nativo do Copilot** (VS Code 1.119+, mai/2026): settings `github.copilot.chat.otel.*` exportam `gen_ai.usage.*`. Foca no **modo Agente** — exporta OTLP padrão para `:4318` (pode exigir um OpenTelemetry Collector encaminhando para `/v1/traces`). Exemplos em `plugins/vscode-config/`.
-- **Extensão própria** (`plugins/vscode-extension/`): fallback que captura via Chat Participant `@o11yia`, conta tokens (`model.countTokens`) e envia direto para o backend com `X-API-Key`.
+# Backend API
+cd server
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python -m uvicorn main:app --host 0.0.0.0 --port 8080
+```
+
+### Option 3: VSCode extension (development)
 
 ```bash
 cd plugins/vscode-extension
-npm install && npm run build      # bundle via esbuild
-# F5 abre o Extension Development Host, ou: npx vsce package  → .vsix
+npm install
+npm run build
+# Press F5 to launch Extension Development Host
 ```
 
-Configure em Settings: `o11yia.serverUrl`, `o11yia.userId`, `o11yia.apiKey`, `o11yia.team`.
-Comando **"O11yIA: Send Test Metric"** valida o pipeline ponta a ponta sem depender do Copilot.
+For detailed collector setup, see:
+- VSCode: `plugins/vscode-config/README.md` (native OTel) and `plugins/vscode-extension/README.md` (fallback)
+- Chrome: `plugins/chrome-extension/` (local setup)
+- IntelliJ: `plugins/intellij-plugin/` (Gradle-based build)
 
-### 3. Extensão Chrome
+---
 
-1. Abra `chrome://extensions`
-2. Ative "Modo desenvolvedor"
-3. Clique "Carregar sem compactação"
-4. Selecione a pasta `plugins/chrome-extension`
-5. Configure o servidor e usuário nas opções
+## API overview
 
-### 4. Plugin IntelliJ
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check (public) |
+| `POST` | `/v1/metrics` | Send a single metric |
+| `POST` | `/v1/metrics/batch` | Send multiple metrics |
+| `POST` | `/v1/traces` | OpenTelemetry receiver (OTLP) |
+| `GET` | `/v1/team/summary` | Team usage summary |
+| `GET` | `/v1/teams` | All teams with budgets |
+| `GET` | `/v1/users/{id}` | User-level metrics |
 
-```bash
-cd plugins/intellij-plugin
-./gradlew buildPlugin
-# O .zip estará em build/distributions/
-```
+All endpoints except `/health` require `X-API-Key` header. Admin endpoints require `X-Admin-Key`.
 
-Instale via: `Settings > Plugins > Install from disk`
-
-## 📊 Pool de Créditos (Jun/2026)
-
-| Período | Créditos/Usuário | Time (18 pessoas) |
-|---------|------------------|-------------------|
-| Promocional (Jun-Ago) | 7.000 | 126.000 |
-| Normal (Set+) | 3.900 | 70.200 |
-
-## 🔐 Autenticação
-
-A API exige chaves, configuradas por variáveis de ambiente no serviço `api`:
-
-- `O11YIA_API_KEYS` — chaves de ingestão/consulta (separadas por vírgula). Header: `X-API-Key`.
-- `O11YIA_ADMIN_KEY` — chave de administração. Header: `X-Admin-Key`.
-- `O11YIA_CORS_ORIGINS` — origens liberadas no CORS (default `http://localhost:8501`).
-- `O11YIA_AUTH_DISABLED=true` — desliga a autenticação (apenas dev/PoC local).
-
-`GET /health` é público. Sem nenhuma chave configurada, a API opera em modo aberto e registra um aviso.
-
-## 🔧 API Endpoints
-
-```
-GET  /health              # Health check (público)
-
-# Ingestão e consulta — exigem X-API-Key
-POST /v1/metrics          # Enviar uma métrica
-POST /v1/metrics/batch    # Enviar múltiplas métricas
-POST /v1/traces           # Receptor OTLP (JSON e protobuf)
-GET  /v1/team/summary     # Resumo do time (+ by_team, by_project)
-GET  /v1/teams            # Times com budget e % usado
-GET  /v1/users/{id}       # Detalhe de um usuário
-GET  /v1/alerts           # Alertas ativos
-
-# Administração — exigem X-Admin-Key
-GET|POST|PUT|DELETE /v1/admin/teams[/{name}]   # CRUD de times/budgets
-GET|PUT             /v1/admin/users[/{id}]     # Atribuir time/nome
-GET|PUT             /v1/admin/config           # Pool, datas promo, team_size
-```
-
-## 📦 Payload de Métrica
-
+Example:
 ```bash
 curl -X POST http://localhost:8080/v1/metrics \
-  -H "X-API-Key: SUA_CHAVE" -H "Content-Type: application/json" \
+  -H "X-API-Key: dev-key-1" \
+  -H "Content-Type: application/json" \
   -d '{
-    "user_id": "usuario@empresa.gov.br",
+    "user_id": "user@example.com",
     "source": "vscode",
     "model": "gpt-4o",
     "input_tokens": 150,
     "output_tokens": 500,
     "team": "backend",
-    "project": "projeto-x",
+    "project": "project-x",
     "context": "chat"
   }'
 ```
 
-## 🧪 Testes
+---
 
-```bash
-pip install -r server/requirements.txt -r server/requirements-dev.txt
-python -m pytest server/ -q
-```
+## Use cases
 
-## 🛡️ Segurança
-
-- Acesso à API protegido por chave (`X-API-Key` / `X-Admin-Key`)
-- Dados ficam no servidor interno (não sai da rede)
-- Sem coleta de conteúdo de código/prompts
-- Apenas métricas agregadas (tokens/modelo/fonte/time/projeto)
-- Compatível com LGPD (dados de uso, não pessoais)
-
-## 📈 Alertas
-
-| Nível | Condição |
-|-------|----------|
-| 🔴 Critical | Pool > 90% usado |
-| 🟡 Warning | Pool > 80% usado |
-| ℹ️ Info | Usuário 2x acima da média |
-
-## 🔄 Sincronização
-
-- **VSCode**: OTel nativo (tempo real) ou extensão própria (batch 30s)
-- **Chrome**: Batch a cada 30 segundos
-- **IntelliJ**: Batch a cada 30 segundos + logs
+- **Engineering managers** monitoring AI tool adoption and cost across teams.
+- **Open-source maintainers** understanding AI-assisted contribution workflows.
+- **Startups** controlling AI coding tool expenses and budgets.
+- **Teams** auditing AI adoption across projects and time periods.
+- **Organizations** detecting unusual usage spikes, anomalies, or budget risks.
+- **Compliance officers** verifying that only safe metadata is collected (no code, no prompts).
 
 ---
 
-Desenvolvido para SETID/TCU - Jun/2026
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for detailed phases and timelines.
+
+### Immediate priorities
+
+- [ ] Stable FastAPI ingestion API
+- [ ] Streamlit dashboard improvements (multi-page, filters, export)
+- [ ] VSCode collector (native OTel + fallback extension)
+- [ ] Chrome collector
+- [ ] IntelliJ collector
+- [ ] Budget alerts and thresholds
+- [ ] Anomaly detection
+- [ ] Privacy and security documentation
+- [ ] Automated tests and CI/CD
+- [ ] Security review and threat model
+- [ ] Release workflow and versioning
+
+---
+
+## Privacy model
+
+See [PRIVACY.md](PRIVACY.md) for the complete privacy policy.
+
+**In short:**
+
+- We collect **metadata only**: source, timestamp, user/team ID, project, model name, token counts, costs.
+- We **never** collect source code, prompts, generated code, secrets, or keystrokes.
+- Deployments are local/self-hosted by default — data stays on your infrastructure.
+- All telemetry fields are explicitly documented.
+
+---
+
+## Codex for OSS usage plan
+
+If accepted into the **Codex for OSS** program, O11yIA BR would use **Codex**, **Codex Security**, and **API credits** to accelerate:
+
+- **Automated code review** — improve FastAPI backend and collectors for security, performance.
+- **Test generation** — add tests for ingestion APIs, dashboard logic, edge cases.
+- **Security analysis** — review telemetry model, threat model, secret redaction safeguards.
+- **Documentation** — improve guides, API docs, contributor onboarding, privacy docs.
+- **Issue triage and release automation** — automated labeling, release notes, changelog generation.
+- **Anomaly detection prototype** — develop and test AI-powered usage pattern analysis.
+
+See [GitHub Issue](https://github.com/rodrigogac/o11yia-br/issues) section for the full plan.
+
+---
+
+## Contributing
+
+We welcome contributions! Before you start:
+
+1. **Open an issue** — suggest a collector, report a bug, propose a feature, or discuss privacy/security concerns.
+2. **Review [CONTRIBUTING.md](CONTRIBUTING.md)** — contributor guidelines and principles.
+3. **Check [SECURITY.md](SECURITY.md)** — security policies and how to report vulnerabilities.
+4. **Understand the privacy model** — see [PRIVACY.md](PRIVACY.md); any new telemetry field must be documented.
+
+### Ways to contribute
+
+- Improve documentation.
+- Suggest new metrics or aggregation strategies.
+- Build or improve collectors (VSCode, Chrome, IntelliJ, others).
+- Improve the FastAPI backend or Streamlit dashboard.
+- Add tests, fix bugs, or review code.
+- Review privacy and security assumptions.
+- Suggest integrations or use cases.
+
+---
+
+## License
+
+This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
+
+---
+
+## Maintainer
+
+**Rodrigo Silva** — [@rodrigogac](https://github.com/rodrigogac)
+
+Questions? Open an issue or reach out.
+
+---
+
+## Português
+
+**O11yIA BR** é uma plataforma open source de observabilidade e governança para times que usam IA no desenvolvimento. O objetivo é monitorar consumo de tokens, créditos, modelos, custos por projeto/time e anomalias de uso em ferramentas como GitHub Copilot, VSCode, Chrome e IntelliJ, **sem coletar código-fonte nem prompts dos usuários**.
+
+### Por que importa
+
+Ferramentas de IA para programação estão crescendo rapidamente, mas equipes ainda têm pouca visibilidade sobre consumo, custos, uso por projeto, riscos de orçamento, governança e segurança.
+
+### O que coleta
+
+✅ Tokens, modelos, fontes (VSCode, Chrome, IntelliJ)  
+✅ Agregação por usuário, time, projeto  
+✅ Tendências de consumo e anomalias  
+✅ Governança de orçamento  
+✅ Dashboard em tempo real  
+
+### O que NÃO coleta
+
+❌ Código-fonte  
+❌ Conteúdo de prompts  
+❌ Código gerado  
+❌ Segredos ou credenciais  
+❌ Arquivos privados  
+❌ Teclados, screenshots, histórico completo  
+
+### Como começar
+
+```bash
+git clone https://github.com/rodrigogac/o11yia-br.git
+cd o11yia-br
+docker compose up --build
+```
+
+- **API**: http://localhost:8080
+- **Dashboard**: http://localhost:8501
+
+### Contribuir
+
+Veja [CONTRIBUTING.md](CONTRIBUTING.md), [PRIVACY.md](PRIVACY.md) e [SECURITY.md](SECURITY.md).
+
+---
+
+**Last updated**: June 2026
